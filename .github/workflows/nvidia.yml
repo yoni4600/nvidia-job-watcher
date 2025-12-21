@@ -1,0 +1,45 @@
+name: Nvidia Job Watcher
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # every hour, at minute 0
+  workflow_dispatch:      # allow manual runs from the UI
+
+jobs:
+  run-watcher:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps
+
+      - name: Run watcher script
+        env:
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_PASS: ${{ secrets.MAIL_PASS }}
+        run: |
+          python nvidia_watch.py
+
+      # Optional: commit updated notified.json back to the repo
+      - name: Commit updated notified.json if changed
+        if: always()
+        run: |
+          if git status --porcelain | grep 'notified.json'; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add notified.json
+            git commit -m "[bot] update notified jobs" || echo "Nothing to commit"
+            git push
+          else
+            echo "No changes in notified.json"
+          fi
