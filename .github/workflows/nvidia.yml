@@ -2,7 +2,7 @@ name: Nvidia Job Watcher
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # every 5 minutes
+    - cron: "0 * * * *"   # every 1 hour
   workflow_dispatch:
 
 jobs:
