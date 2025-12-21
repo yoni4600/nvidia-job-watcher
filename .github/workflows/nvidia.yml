@@ -23,13 +23,12 @@ jobs:
           pip install -r requirements.txt
           python -m playwright install --with-deps
 
-      - name: Debug secrets
-        run: |
-          echo "USER: $MAIL_USER"
-          echo "PASS LEN: ${#MAIL_PASS}"
+      - name: Run watcher script
         env:
           MAIL_USER: ${{ secrets.MAIL_USER }}
           MAIL_PASS: ${{ secrets.MAIL_PASS }}
+        run: |
+          python nvidia_watch.py
 
       # Optional: commit updated notified.json back to the repo
       - name: Commit updated notified.json if changed
