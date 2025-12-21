@@ -13,6 +13,8 @@ URL = (
     "NVIDIAExternalCareerSite?locationHierarchy1=2fcb99c455831013ea52bbe14cf9326c"
 )
 
+BASE_URL = "https://nvidia.wd5.myworkdayjobs.com"
+
 STORE_FILE = "notified.json"
 
 
@@ -56,13 +58,8 @@ def get_today_jobs() -> list[dict]:
         page = browser.new_page()
         page.goto(URL, wait_until="load")
 
-        # Wait for jobs counter to be visible
         page.wait_for_selector('[data-automation-id="jobFoundText"]', timeout=30000)
-
-        # Scroll to trigger job list rendering
         page.mouse.wheel(0, 2000)
-
-        # Wait for at least one job title
         page.wait_for_selector('[data-automation-id="jobTitle"]', timeout=30000)
 
         title_elements = page.query_selector_all('[data-automation-id="jobTitle"]')
@@ -71,15 +68,21 @@ def get_today_jobs() -> list[dict]:
         jobs: list[dict] = []
 
         for t, p in zip(title_elements, posted_elements):
-            posted_txt = p.inner_text().strip()
+            raw_posted = p.inner_text().strip()
+            # Usually "posted on\nPosted Today" → keep last line only
+            posted_txt = raw_posted.splitlines()[-1]
             posted_lower = posted_txt.lower()
 
-            # Only keep "today" jobs; stop at first non-today
             if "today" in posted_lower:
+                href = t.get_attribute("href") or ""
+                # If Playwright returns a relative URL, make it absolute
+                if href.startswith("/"):
+                    href = BASE_URL + href
+
                 jobs.append(
                     {
                         "title": t.inner_text().strip(),
-                        "url": t.get_attribute("href"),
+                        "url": href,
                         "posted": posted_txt,
                     }
                 )
